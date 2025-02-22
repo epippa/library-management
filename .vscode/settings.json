@@ -1,0 +1,9 @@
+{
+    "java.configuration.runtimes": [
+      {
+        "name": "JavaSE-22",
+        "path": "D:/Download/Java/jdk-22",
+        "default": true
+      }
+    ]
+  }
