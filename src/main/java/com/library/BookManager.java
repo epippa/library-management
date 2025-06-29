@@ -4,22 +4,23 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BookManager {     //manages DB operations
-    private Connection dbConn;  //Active DB connection
+public class BookManager {     //manages the SQL operations about the Book table
+    private Connection dbConn;  //Enable the Database connection
 
     //inizialization with database connection
-    public BookManager(Connection conn) {   //conn = valid sql connection
-        this.dbConn=conn;
+    public BookManager(Connection conn) {
+        this.dbConn=conn;   
     }
 
     //searches book by title (case-insensitive -> ILIKE)
     public void searchBooks(String title) {
         String query="SELECT isbn,title,yearofpublication,copies FROM book WHERE title ILIKE ?";
         try (PreparedStatement stmt=dbConn.prepareStatement(query)) {
-            stmt.setString(1,"%" + title + "%");
+            stmt.setString(1,"%" + title + "%");    // '%' is used for partial match: any characters before or after the title
             
             try(ResultSet rs=stmt.executeQuery()) {
                 List<Book> results=new ArrayList<>();
+                //For each result, create a Book object and add it to the list
                 while(rs.next()) {
                     results.add(new Book(
                         rs.getString("isbn"),
@@ -42,21 +43,22 @@ public class BookManager {     //manages DB operations
 
     //Add new book to database
     public void addNewBook(String isbn,String title,int year,int copies) {
-        String query="INSERT INTO Book (isbn,title,yearofpublication,copies) VALUES (?,?,?,?)";
-        try(PreparedStatement stmt=dbConn.prepareStatement(query)) {  //prepareStatement inserts
-            stmt.setString(1,isbn);                    //the following parameters
-            stmt.setString(2,title);                   //in order in the ? positions 
-            stmt.setInt(3,year);                       //in a secure way: avoid
-            stmt.setInt(4,copies);                     //attacks of sql injection
+        String query="INSERT INTO Book (isbn,title,yearofpublication,copies, availableCopies) VALUES (?,?,?,?,?)";
+        try(PreparedStatement stmt=dbConn.prepareStatement(query)) {
+            stmt.setString(1,isbn);
+            stmt.setString(2,title); 
+            stmt.setInt(3,year);
+            stmt.setInt(4,copies);
+            stmt.setInt(5,copies);  //availableCopies initally setted = copies
             
-            int rows=stmt.executeUpdate();
-            System.out.println(rows+" book added!");
+            int rows=stmt.executeUpdate();  //Executes the prepared INSERT statement and returns how many rows were affected
+            System.out.println(rows+" book added!");    //If rows>0, the book was added successfully
         } catch(SQLException e) {
             System.err.println("Add error");
         }
     }
 
-    //updates available copies of a book
+    //update the total number of copies of a book owned by the library
     public void updateCopies(String isbn,int copies) {
         String query="UPDATE book SET copies=? WHERE isbn=?";
         try(PreparedStatement stmt=dbConn.prepareStatement(query)) {

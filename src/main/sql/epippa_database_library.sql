@@ -3,8 +3,8 @@
 -- Emanuele Pippa, Student ID [20009]
 
 DROP TABLE IF EXISTS Authorizes CASCADE;
-DROP TABLE IF EXISTS InternalLoan CASCADE;
-DROP TABLE IF EXISTS ExternalLoan CASCADE;
+DROP TABLE IF EXISTS Internal CASCADE;
+DROP TABLE IF EXISTS External CASCADE;
 DROP TABLE IF EXISTS Loan CASCADE;
 DROP TABLE IF EXISTS Phone CASCADE;
 DROP TABLE IF EXISTS Student CASCADE;
@@ -20,16 +20,16 @@ DROP TABLE IF EXISTS Writer CASCADE;
 DROP TABLE IF EXISTS Librarian CASCADE;
 
 CREATE TABLE Librarian (
-    librarianID SERIAL PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
-    lastName VARCHAR(50) NOT NULL
+    lastname VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE Writer (
     name VARCHAR(50) NOT NULL,
-    lastName VARCHAR(50) NOT NULL,
+    lastname VARCHAR(50) NOT NULL,
     nationality VARCHAR(50) NOT NULL,
-    PRIMARY KEY (name, lastName)
+    PRIMARY KEY (name, lastname)
 );
 
 CREATE TABLE Publisher (
@@ -47,99 +47,94 @@ CREATE TABLE Book (
     ISBN VARCHAR(13) PRIMARY KEY,
     title VARCHAR(100) NOT NULL,
     yearOfPublication INTEGER,
-    copies INTEGER CHECK (copies >= 0)
+    copies INTEGER CHECK (copies >= 0),
+    availableCopies INTEGER CHECK (availableCopies <= copies) -- To avoid availableCopies < 0
 );
 
 CREATE TABLE PublishedBy (
-    bookISBN VARCHAR(13) PRIMARY KEY REFERENCES Book(ISBN) ON DELETE CASCADE,
-    publisherName VARCHAR(50) REFERENCES Publisher(name) ON DELETE CASCADE,
+    book VARCHAR(13) PRIMARY KEY REFERENCES Book(ISBN) ON DELETE CASCADE,
+    publisher VARCHAR(50) REFERENCES Publisher(name) ON DELETE CASCADE,
     edition VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE BelongsTo (
-    bookISBN VARCHAR(13) REFERENCES Book(ISBN) ON DELETE CASCADE,
-    categoryName VARCHAR(50) REFERENCES Category(name) ON DELETE CASCADE,
-    PRIMARY KEY (bookISBN, categoryName)
+    book VARCHAR(13) REFERENCES Book(ISBN) ON DELETE CASCADE,
+    category VARCHAR(50) REFERENCES Category(name) ON DELETE CASCADE,
+    PRIMARY KEY (book, category)
 );
 
 CREATE TABLE WrittenBy (
-    bookISBN VARCHAR(13) REFERENCES Book(ISBN) ON DELETE CASCADE,
-    writerName VARCHAR(50) NOT NULL,
-    writerLastName VARCHAR(50) NOT NULL,
-    FOREIGN KEY (writerName, writerLastName) REFERENCES Writer(name, lastName) ON DELETE CASCADE,
-    PRIMARY KEY (bookISBN, writerName, writerLastName)
+    book VARCHAR(13) REFERENCES Book(ISBN) ON DELETE CASCADE,
+    writerName VARCHAR(50),
+    writerLastname VARCHAR(50),
+    PRIMARY KEY (book, writerName, writerLastname),
+    FOREIGN KEY (writerName, writerLastname) REFERENCES Writer(name, lastname) ON DELETE CASCADE
 );
 
-DROP TYPE IF EXISTS membership; --remove and create again type membership
+--remove and create again type membership
+DROP TYPE IF EXISTS membership;
 CREATE TYPE membership AS ENUM ('standard', 'premium');
 
-DROP TYPE IF EXISTS loan_status; --remove and create again type loan_status
-CREATE TYPE loan_status AS ENUM ('available', 'full');
-
 CREATE TABLE Client (
-    clientID SERIAL PRIMARY KEY,
+    clientId SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
-    lastName VARCHAR(50) NOT NULL,
+    lastname VARCHAR(50) NOT NULL,
     age INTEGER CHECK (age > 0),
     cityOfBirth VARCHAR(50),
     membershipType membership NOT NULL,
-    loanStatus loan_status NOT NULL DEFAULT 'available',
     maxBookPerTime INTEGER CHECK (maxBookPerTime > 0 AND maxBookPerTime <= 5)
 );
 
 CREATE TABLE Phone (
-    clientID INTEGER REFERENCES Client(clientID) ON DELETE CASCADE,
-    phoneNumber VARCHAR(15),
-    PRIMARY KEY (clientID, phoneNumber)
+    client INTEGER REFERENCES Client(clientId) ON DELETE CASCADE,
+    phone VARCHAR(15) NOT NULL,
+    PRIMARY KEY (client, phone)
 );
 
--- Function: max 2 phone numbers
 CREATE OR REPLACE FUNCTION check_max_phones()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF (SELECT COUNT(*) FROM Phone WHERE clientID = NEW.clientID) > 2 THEN
+    IF (SELECT COUNT(*) FROM Phone WHERE client = NEW.client) >= 2 THEN
         RAISE EXCEPTION 'Maximum 2 phone numbers per client';
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger
 CREATE TRIGGER maximum_phones
 BEFORE INSERT OR UPDATE ON Phone
 FOR EACH ROW EXECUTE FUNCTION check_max_phones();
 
 CREATE TABLE Student (
-    clientID INTEGER REFERENCES Client(clientID) ON DELETE CASCADE,
-    studentID VARCHAR(20) NOT NULL,
-    universityCode VARCHAR(10) NOT NULL,
-    courseOfStudy VARCHAR(50) NOT NULL,
-    enrollmentYear INTEGER NOT NULL,
-    PRIMARY KEY (clientID, studentID, universityCode)
+    client INTEGER PRIMARY KEY REFERENCES Client(clientId) ON DELETE CASCADE,
+    studentId VARCHAR(20),
+    universityCode VARCHAR(10),
+    courseOfStudy VARCHAR(50),
+    enrollmentYear INTEGER
 );
 
 CREATE TABLE Worker (
-    clientID INTEGER PRIMARY KEY REFERENCES Client(clientID) ON DELETE CASCADE,
-    jobTitle VARCHAR(50) NOT NULL,
-    department VARCHAR(50) NOT NULL
+    client INTEGER PRIMARY KEY REFERENCES Client(clientId) ON DELETE CASCADE,
+    jobTitle VARCHAR(50),
+    department VARCHAR(50)
 );
 
 CREATE TABLE Loan (
     startDate DATE NOT NULL,
-    bookISBN VARCHAR(13) REFERENCES Book(ISBN) ON DELETE CASCADE,
-    clientID INTEGER REFERENCES Client(clientID) ON DELETE CASCADE,
+    book VARCHAR(13) NOT NULL REFERENCES Book(ISBN) ON DELETE CASCADE,
+    client INTEGER NOT NULL REFERENCES Client(clientId) ON DELETE CASCADE,
     endDate DATE NOT NULL,
     returnDate DATE,
     returnNotes TEXT,
-    PRIMARY KEY (startDate, bookISBN, clientID)
+    loanStatus VARCHAR(20) CHECK (loanStatus IN ('pending', 'active', 'returned', 'expired')),
+    PRIMARY KEY (startDate, book, client)
 );
 
--- Function: check if a book is available before creating a loan
 CREATE OR REPLACE FUNCTION check_book_availability()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF (SELECT copies FROM Book WHERE ISBN = NEW.bookISBN) < 1 THEN
-        RAISE EXCEPTION 'No copies available for this book';
+    IF (SELECT availableCopies FROM Book WHERE ISBN = NEW.book) < 1 THEN
+        RAISE EXCEPTION 'No available copies for this book';
     END IF;
     RETURN NEW;
 END;
@@ -150,50 +145,43 @@ CREATE TRIGGER enforce_book_availability
 BEFORE INSERT ON Loan
 FOR EACH ROW EXECUTE FUNCTION check_book_availability();
 
-CREATE TABLE InternalLoan (
+CREATE TABLE Internal (
     startDate DATE NOT NULL,
-    bookISBN VARCHAR(13) NOT NULL,
-    clientID INTEGER NOT NULL,
+    book VARCHAR(13) NOT NULL,
+    client INTEGER NOT NULL,
     timeLimit INTEGER CHECK (timeLimit = 15),
-    FOREIGN KEY (startDate, bookISBN, clientID) REFERENCES Loan(startDate, bookISBN, clientID) ON DELETE CASCADE,
-    PRIMARY KEY (startDate, bookISBN, clientID)
+    PRIMARY KEY (startDate, book, client),
+    FOREIGN KEY (startDate, book, client) REFERENCES Loan(startDate, book, client) ON DELETE CASCADE
 );
 
-CREATE TABLE ExternalLoan (
+CREATE TABLE External (
     startDate DATE NOT NULL,
-    bookISBN VARCHAR(13) NOT NULL,
-    clientID INTEGER NOT NULL,
+    book VARCHAR(13) NOT NULL,
+    client INTEGER NOT NULL,
     dueDate DATE NOT NULL,
     allowedExtension BOOLEAN DEFAULT FALSE,
-    amountOfFees DECIMAL(10,2) CHECK (amountOfFees >= 0),
-    CONSTRAINT loan_duration CHECK (dueDate <= startDate + INTERVAL '30 days'),
-    FOREIGN KEY (startDate, bookISBN, clientID) REFERENCES Loan(startDate, bookISBN, clientID) ON DELETE CASCADE,
-    PRIMARY KEY (startDate, bookISBN, clientID)
+    amountOfFees DECIMAL(10,2) DEFAULT 0 CHECK (amountOfFees >= 0),
+    PRIMARY KEY (startDate, book, client),
+    FOREIGN KEY (startDate, book, client) REFERENCES Loan(startDate, book, client) ON DELETE CASCADE
 );
 
 CREATE TABLE Authorizes (
-    librarianID INTEGER REFERENCES Librarian(librarianID) ON DELETE CASCADE,
+    librarian INTEGER NOT NULL REFERENCES Librarian(id) ON DELETE CASCADE,
     startDate DATE NOT NULL,
-    bookISBN VARCHAR(13) NOT NULL,
-    clientID INTEGER NOT NULL,
+    book VARCHAR(13) NOT NULL,
+    client INTEGER NOT NULL,
     acceptance BOOLEAN NOT NULL,
-    FOREIGN KEY (startDate, bookISBN, clientID) REFERENCES Loan(startDate, bookISBN, clientID) ON DELETE CASCADE,
-    PRIMARY KEY (librarianID, startDate, bookISBN, clientID)
+    PRIMARY KEY (startDate, book, client),
+    FOREIGN KEY (startDate, book, client) REFERENCES Loan(startDate, book, client)
 );
 
--- update book's copies when a copy is borrowed
+-- Update availableCopies after authorization
 CREATE OR REPLACE FUNCTION update_book_copies()
 RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.acceptance = TRUE THEN
-        UPDATE Book SET copies = copies - 1 
-        WHERE ISBN = NEW.bookISBN AND copies > 0;
-        
-        UPDATE Client SET loanStatus = 'full'
-        WHERE clientID = NEW.clientID AND (
-            SELECT COUNT(*) FROM Loan 
-            WHERE clientID = NEW.clientID AND returnDate IS NULL
-        ) >= (SELECT maxBookPerTime FROM Client WHERE clientID = NEW.clientID);
+        UPDATE Book SET availableCopies = availableCopies - 1 
+        WHERE ISBN = NEW.book AND availableCopies > 0;
     END IF;
     RETURN NEW;
 END;
@@ -205,21 +193,19 @@ AFTER INSERT OR UPDATE ON Authorizes
 FOR EACH ROW EXECUTE FUNCTION update_book_copies();
 
 -- Function: update loan status when a book is returned
-CREATE OR REPLACE FUNCTION update_loan_status_on_return()
+-- (increase availableCopies in Book table)
+CREATE OR REPLACE FUNCTION update_loan_on_return()
 RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.returnDate IS NOT NULL THEN
-        UPDATE Client SET loanStatus = 'available'
-        WHERE clientID = NEW.clientID AND (
-            SELECT COUNT(*) FROM Loan 
-            WHERE clientID = NEW.clientID AND returnDate IS NULL
-        ) < (SELECT maxBookPerTime FROM Client WHERE clientID = NEW.clientID);
+        UPDATE Book SET availableCopies = availableCopies + 1
+        WHERE ISBN = NEW.book;
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger: manage loan status when a book is returned
-CREATE TRIGGER manage_loan_status_on_return
+CREATE TRIGGER restore_book_copy
 AFTER UPDATE ON Loan
-FOR EACH ROW EXECUTE FUNCTION update_loan_status_on_return();
+FOR EACH ROW EXECUTE FUNCTION update_loan_on_return();
