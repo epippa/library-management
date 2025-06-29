@@ -2,6 +2,9 @@
 
 # Municipal Library Management System
 
+> **License**: [MIT](LICENSE)
+
+
 This project implements a **management system for a physical municipal library**, developed in **Java** with **PostgreSQL**. The system supports:
 
 - Book **registration**, **search**, and **copy management**
@@ -129,3 +132,8 @@ This ensures the system starts with some data:
 - Authorizations
 - Writers
 - Librarians
+
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

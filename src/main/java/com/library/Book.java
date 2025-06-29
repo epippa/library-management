@@ -1,3 +1,9 @@
+/*
+ * This file is part of the Municipal Library Management System.
+ * Copyright (c) 2025 Emanuele Pippa
+ * Licensed under the MIT License. See the LICENSE file for details.
+ */
+
 package com.library;
 
 public class Book {     //represent a book entity

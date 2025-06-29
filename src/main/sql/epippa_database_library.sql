@@ -1,6 +1,8 @@
--- Municipal library system database
--- Introduction to Databases project
--- Emanuele Pippa, Student ID [20009]
+-- 
+-- This file is part of the Municipal Library Management System.
+-- Copyright (c) 2025 Emanuele Pippa
+-- Licensed under the MIT License. See the LICENSE file for details.
+--
 
 DROP TABLE IF EXISTS Authorizes CASCADE;
 DROP TABLE IF EXISTS Internal CASCADE;
