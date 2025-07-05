@@ -6,23 +6,27 @@
 
 package com.library;
 
-public class Book {     //represent a book entity
-    
+public class Book {  //Represents a book entity
+
     public final String isbnCode;
     public final String bookTitle;
     public final int publishYear;
     public final int numCopies;
+    public final int availableCopies;
+    public final int edition;
 
-    public Book(String isbn, String title, int year, int copies) {
-        this.isbnCode=isbn;
-        this.bookTitle=title;
-        this.publishYear=year;
-        this.numCopies=copies;
+    public Book(String isbn, String title, int year, int copies, int availableCopies, int edition) {
+        this.isbnCode = isbn;
+        this.bookTitle = title;
+        this.publishYear = year;
+        this.numCopies = copies;
+        this.availableCopies = availableCopies;
+        this.edition = edition;
     }
 
-    //returns a formatted string representation of the book
     public String toString() {
         return "\nISBN: " + isbnCode + "\nTitle: " + bookTitle
-              + "\nYear: " + publishYear + "\nCopies: " + numCopies+"\n";
+              + "\nYear: " + publishYear + "\nEdition: " + edition
+              + "\nCopies: " + numCopies + "\nAvailable: " + availableCopies + "\n";
     }
 }
