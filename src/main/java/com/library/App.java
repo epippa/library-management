@@ -46,7 +46,7 @@ public class App {
         System.out.println("\n=== LIBRARY SYSTEM ===");
         System.out.println("1. Search books");
         System.out.println("2. Add book");
-        System.out.println("3. Change copies");
+        System.out.println("3. Change available copies");
         System.out.println("4. EXIT");
         System.out.print("Choose: ");
 
@@ -94,8 +94,11 @@ public class App {
             
             System.out.print("Nr. of copies: ");
             int copies=Integer.parseInt(sc.nextLine());
+
+            System.out.print("Edition: ");
+            int edition=Integer.parseInt(sc.nextLine());
             
-            bm.addNewBook(isbn,title,year,copies);
+            bm.addNewBook(isbn,title,year,copies,edition);
         } catch(NumberFormatException e) {
             System.out.println("Wrong number format :(");
         }
@@ -113,7 +116,7 @@ public class App {
             System.out.print("New amount of copies: ");
             int copies=Integer.parseInt(sc.nextLine());
             
-            bm.updateCopies(isbn,copies);
+            bm.updateAvailableCopies(isbn,copies);
         } catch(NumberFormatException e) {
             System.out.println("Invalid number!");
         }
