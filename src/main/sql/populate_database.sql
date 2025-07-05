@@ -7,13 +7,14 @@ DELETE FROM Librarian;
 DELETE FROM Writer;
 DELETE FROM Book;
 
-INSERT INTO Book (isbn, title, yearofpublication, copies, availableCopies) VALUES
-('9780451524935', '1984', 1949, 5, 5),
-('9780439708180', 'Harry Potter', 1997, 3, 3),
-('9780307743657', 'The Road', 2006, 7, 7),
-('9788804668237', 'Il nome della rosa', 1980, 5, 5),
-('9788806227458', 'Se una notte d''inverno un viaggiatore', 1979, 3, 3),
-('9788845270527', 'Novecento', 1994, 7, 7);
+INSERT INTO Book (isbn, title, yearofpublication, copies, availableCopies, edition) VALUES
+('9780451524935', '1984', 1949, 5, 5, NULL),
+('9780439708180', 'Harry Potter', 1997, 3, 3, NULL),
+('9780307743657', 'The Road', 2006, 7, 7, NULL),
+('9788804668237', 'Il nome della rosa', 1980, 5, 5, NULL),
+('9788806227458', 'Se una notte d''inverno un viaggiatore', 1979, 3, 3, NULL),
+('9788845270527', 'Novecento', 1994, 7, 7, NULL);
+
 
 INSERT INTO Client (name, lastname, age, cityOfBirth, membershipType, maxBookPerTime) VALUES
 ('Emanuele', 'Pippa', 25, 'Bolzano', 'standard', 3),
