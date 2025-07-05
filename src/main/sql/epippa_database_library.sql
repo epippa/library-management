@@ -50,13 +50,8 @@ CREATE TABLE Book (
     title VARCHAR(100) NOT NULL,
     yearOfPublication INTEGER,
     copies INTEGER CHECK (copies >= 0),
-    availableCopies INTEGER CHECK (availableCopies <= copies) -- To avoid availableCopies < 0
-);
-
-CREATE TABLE PublishedBy (
-    book VARCHAR(13) PRIMARY KEY REFERENCES Book(ISBN) ON DELETE CASCADE,
-    publisher VARCHAR(50) REFERENCES Publisher(name) ON DELETE CASCADE,
-    edition VARCHAR(50) NOT NULL
+    availableCopies INTEGER DEFAULT 0 CHECK (availableCopies >= 0 AND availableCopies <= copies),
+    edition INTEGER
 );
 
 CREATE TABLE BelongsTo (
