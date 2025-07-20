@@ -133,6 +133,14 @@ This ensures the system starts with some data:
 - Writers
 - Librarians
 
+---
+
+## Autore
+
+**Emanuele Pippa**  
+Studente di Informatica presso la Libera Università di Bolzano  
+GitHub: [epippa](https://github.com/epippa)
+
 
 ## License
 
