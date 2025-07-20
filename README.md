@@ -138,7 +138,7 @@ This ensures the system starts with some data:
 ## Autore
 
 **Emanuele Pippa**  
-Studente di Informatica presso la Libera Università di Bolzano  
+Computer Science student at the Free University of Bolzano
 GitHub: [epippa](https://github.com/epippa)
 
 
